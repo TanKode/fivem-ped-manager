@@ -1,15 +1,37 @@
-Citizen.CreateThread(function()
-    Citizen.Wait(10000)
+ESX = nil
 
+Citizen.CreateThread(function()
+    while ESX == nil do
+        TriggerEvent('esx:getSharedObject', function(obj)
+            ESX = obj
+        end)
+
+        Citizen.Wait(0)
+    end
+
+    while ESX.GetPlayerData().job == nil do
+        Citizen.Wait(10)
+    end
+
+    PlayerData = ESX.GetPlayerData()
+
+    Citizen.Wait(5000)
+
+    SpawnPedestrians()
+end)
+
+RegisterCommand('spawnpeds', function(source, args)
     SpawnPedestrians()
 end)
 
 function SpawnPedestrians()
     for _, v in pairs(Config.Peds) do
+        print('try: ' .. v.ped)
+
         local model = GetHashKey(v.ped)
 
         if TryToRequestModel(model) then
-            local ped = CreatePed(28, model, v.coords.x, v.coords.y, v.coords.z, v.coords.w, false, false)
+            local ped = CreatePed(28, model, v.coords.x, v.coords.y, v.coords.z + 1, v.coords.w, false, false)
             SetEntityHeading(ped, v.coords.w)
             FreezeEntityPosition(ped, true)
             SetPedCanRagdoll(ped, true)
@@ -17,9 +39,15 @@ function SpawnPedestrians()
             SetEntityProofs(ped, true, true, true, true, true, true, true, true)
             SetBlockingOfNonTemporaryEvents(ped, true)
 
-            Citizen.Wait(1000)
+            Citizen.Wait(200)
+
+            print('task: ' .. v.task)
 
             if v.task == 'animation' then
+                FreezeEntityPosition(ped, false)
+
+                Citizen.Wait(1000)
+
                 FreezeEntityPosition(ped, true)
 
                 if TryToRequestAnimDict(v.animdict) then
@@ -29,11 +57,13 @@ function SpawnPedestrians()
                 end
             elseif v.task == 'wander' then
                 FreezeEntityPosition(ped, false)
-                TaskWanderInArea(ped, v.coords.x, v.coords.y, v.coords.z, v.wanderradius, v.wanderlength, v.wanderwait)
+                TaskWanderInArea(ped, v.coords.x, v.coords.y, v.coords.z + 1, v.wanderradius, v.wanderlength, v.wanderwait)
             end
         end
 
         SetModelAsNoLongerNeeded(model)
+
+        print('spawned: ' .. v.ped)
     end
 end
 
